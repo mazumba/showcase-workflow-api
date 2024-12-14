@@ -1,0 +1,14 @@
+nelmio_api_doc:
+  documentation:
+    info:
+      title: Workflow Api Showcase
+      description: Showcase, how we implemented api based object validation with Symfony's workflow component
+      version: '1.0.0'
+    servers:
+      - url: 'http://localhost:8980'
+    tags:
+      - name: Application
+        description: Create, update and retrieve Applications
+  areas: # to filter documented areas
+    path_patterns:
+      - ^/api(?!/doc) # Accepts routes under /api except /api/doc
