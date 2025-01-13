@@ -1,0 +1,4 @@
+extends: [[spectral:oas, recommended], [vacuum:owasp, all]]
+rules:
+  description-duplication: false
+  oas3-unused-component: false

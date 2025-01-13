@@ -1,0 +1,24 @@
+framework:
+  workflows:
+    application:
+      type: 'state_machine'
+      marking_store:
+        service: App\Supportive\Workflow\Application\MarkingStore
+      supports:
+        - App\Entity\Application
+      initial_marking: !php/enum App\Domain\Application\Enum\ApplicationStatus::FIRST->value
+      places:
+        - !php/enum App\Domain\Application\Enum\ApplicationStatus::FIRST->value
+        - !php/enum App\Domain\Application\Enum\ApplicationStatus::SECOND->value
+      transitions:
+        !php/enum App\Domain\Application\Enum\ApplicationTransition::FIRST_TO_SECOND->value:
+          from: !php/enum App\Domain\Application\Enum\ApplicationStatus::FIRST->value
+          to: !php/enum App\Domain\Application\Enum\ApplicationStatus::SECOND->value
+
+        !php/enum App\Domain\Application\Enum\ApplicationTransition::SECOND_TO_FIRST->value:
+          from: !php/enum App\Domain\Application\Enum\ApplicationStatus::SECOND->value
+          to: !php/enum App\Domain\Application\Enum\ApplicationStatus::FIRST->value
+
+        !php/enum App\Domain\Application\Enum\ApplicationTransition::FINISH->value:
+          from: !php/enum App\Domain\Application\Enum\ApplicationStatus::SECOND->value
+          to: !php/enum App\Domain\Application\Enum\ApplicationStatus::DONE->value
