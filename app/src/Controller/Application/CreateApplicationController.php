@@ -7,7 +7,7 @@ namespace App\Controller\Application;
 use App\Domain\Application\ApplicationOutput;
 use App\Domain\Application\ApplicationPayload;
 use App\Domain\Application\Transformer\EntityToOutputTransformer;
-use App\Domain\Application\Transformer\PayloadToEntityUpdater;
+use App\Domain\Application\Transformer\PayloadToEntityTransformer;
 use App\Entity\Application;
 use App\Supportive\OpenApi\Example;
 use App\Supportive\OpenApi\UnprocessableEntityResponse;
@@ -25,7 +25,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final readonly class CreateApplicationController
 {
     public function __construct(
-        private PayloadToEntityUpdater $payloadToEntityUpdater,
+        private PayloadToEntityTransformer $payloadToEntityTransformer,
         private EntityManagerInterface $entityManager,
         private EntityToOutputTransformer $entityToOutputTransformer,
     ) {
@@ -60,7 +60,7 @@ final readonly class CreateApplicationController
     public function __invoke(
         #[MapRequestPayload] ApplicationPayload $payload,
     ): JsonResponse {
-        $application = $this->payloadToEntityUpdater->update($payload, new Application());
+        $application = $this->payloadToEntityTransformer->transform($payload, new Application());
 
         $this->entityManager->persist($application);
         $this->entityManager->flush();

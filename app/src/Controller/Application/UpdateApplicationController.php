@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Controller\Application;
 
+use App\Domain\Application\ApplicationInput;
 use App\Domain\Application\ApplicationOutput;
 use App\Domain\Application\ApplicationPayload;
 use App\Domain\Application\Transformer\EntityToOutputTransformer;
-use App\Domain\Application\Transformer\EntityToPayloadTransformer;
-use App\Domain\Application\Transformer\PayloadToEntityUpdater;
+use App\Domain\Application\Transformer\PayloadToEntityTransformer;
 use App\Entity\Application;
 use App\Supportive\OpenApi\Example;
 use App\Supportive\OpenApi\UnprocessableEntityResponse;
-use App\Supportive\Workflow\Application\TraversedStatusListProvider;
+use App\Supportive\Validator\Application\ApplicationGroupsProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Nelmio\ApiDocBundle\Annotation\Model;
 use OpenApi\Attributes as OA;
@@ -21,6 +21,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -29,17 +30,16 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 final readonly class UpdateApplicationController
 {
     public function __construct(
-        private PayloadToEntityUpdater $payloadToEntityUpdater,
-        private EntityToPayloadTransformer $entityToPayloadTransformer,
+        private PayloadToEntityTransformer $payloadToEntityTransformer,
         private ValidatorInterface $validator,
-        private TraversedStatusListProvider $statusListProvider,
+        private ApplicationGroupsProvider $statusListProvider,
 
         private EntityManagerInterface $entityManager,
         private EntityToOutputTransformer $entityToOutputTransformer,
     ) {
     }
 
-    #[OA\Patch(
+    #[OA\Put(
         operationId: 'updateApplication',
         description: 'Update an Application',
         summary: 'Update an Application',
@@ -64,23 +64,23 @@ final readonly class UpdateApplicationController
             new UnprocessableEntityResponse(),
         ],
     )]
-    #[Route(path: '/applications/{id}', name: 'app_application_update', methods: [Request::METHOD_PATCH], format: 'json')]
+    #[Route(path: '/applications/{id}', name: 'app_application_update', methods: [Request::METHOD_PUT], format: 'json')]
     public function __invoke(
         Application $application,
         #[MapRequestPayload] ApplicationPayload $payload,
     ): JsonResponse {
-        $this->payloadToEntityUpdater->update($payload, $application);
+        $input = new ApplicationInput($payload, $application);
 
-        $completePayload = $this->entityToPayloadTransformer->transform($application);
         $violations = $this->validator->validate(
-            value: $completePayload,
-            groups: $this->statusListProvider->getList($application),
+            value: $input,
+            groups: $this->statusListProvider->getGroups($application),
         );
 
         if (\count($violations) > 0) {
-            throw new ValidationFailedException($completePayload, $violations);
+            throw new UnprocessableEntityHttpException((new ValidationFailedException($payload, $violations))->getMessage());
         }
 
+        $this->payloadToEntityTransformer->transform($payload, $application);
         $this->entityManager->flush();
 
         return new JsonResponse(

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Supportive\Workflow\Application;
+namespace App\Supportive\Validator\Application;
 
 use App\Entity\Application;
 use Symfony\Component\Workflow\WorkflowInterface;
 
-final readonly class TraversedStatusListProvider
+final readonly class ApplicationGroupsProvider
 {
     public function __construct(
         private WorkflowInterface $applicationStateMachine,
@@ -17,9 +17,9 @@ final readonly class TraversedStatusListProvider
     /**
      * @return string[]
      */
-    public function getList(Application $application): array
+    public function getGroups(Application $application): array
     {
-        $statusList = [];
+        $statusList = ['Default'];
         foreach ($this->applicationStateMachine->getDefinition()->getPlaces() as $status) {
             $statusList[] = $status;
             if ($status === $application->getStatus()->value) {
